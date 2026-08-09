@@ -40,7 +40,7 @@ guard supported.contains(where: { $0.identifier(.bcp47) == locale.identifier(.bc
 }
 
 guard await AVCaptureDevice.requestAccess(for: .audio) else {
-    fail("microphone permission denied (TCC はターミナルアプリに帰属)")
+    fail("Microphone access denied. The app running Neovim must have microphone permission and the com.apple.security.device.audio-input entitlement.")
 }
 
 let transcriber = SpeechTranscriber(

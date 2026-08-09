@@ -5,7 +5,7 @@ function M.check()
   health.start("koe")
 
   if vim.fn.has("mac") == 0 then
-    health.error("macOS のみ対応")
+    health.error("koe.nvim supports macOS only")
     return
   end
 
@@ -14,22 +14,30 @@ function M.check()
   if major >= 26 then
     health.ok("macOS " .. ver)
   else
-    health.error("macOS 26+ が必要 (SpeechTranscriber)", { "macOS 15 なら hear ラッパを検討" })
+    health.error("macOS 26 or later is required for SpeechTranscriber")
   end
 
   local cmd = require("koe").helper_cmd()
   if vim.fn.executable(cmd) == 1 then
     health.ok("helper: " .. cmd)
   else
-    health.error("同梱 helper が利用できません: " .. cmd, { "macOS 26 / Apple silicon 版を再インストールしてください" })
+    health.error("bundled helper is unavailable: " .. cmd, { "Reinstall the macOS 26 / Apple silicon release" })
   end
 
   if vim.env.TMUX then
-    health.warn("tmux 配下: TCC プロンプトが表示されない可能性あり(未検証)")
+    health.warn("tmux may prevent the macOS permission prompt from appearing (unverified)")
+  end
+
+  if vim.g.neovide then
+    health.warn(
+      "Neovide must be signed with the com.apple.security.device.audio-input entitlement for microphone access",
+      { "https://github.com/neovide/neovide/issues/3531" }
+    )
   end
 
   local term = vim.env.TERM_PROGRAM or "unknown"
-  health.info("terminal: " .. term .. "(マイク TCC はターミナルアプリに帰属)")
+  health.info("terminal: " .. term)
+  health.info("microphone permission belongs to the app running Neovim")
 end
 
 return M
