@@ -28,6 +28,10 @@ Install the repository with your preferred Neovim plugin manager. The
 macOS 26 / Apple silicon helper is bundled, so no separate build step is
 required.
 
+> [!NOTE]
+> The prebuilt helper is committed as a temporary measure until nixpkgs
+> provides a Swift 6 toolchain compatible with the macOS 26 Speech SDK.
+
 ## Setup
 
 ```lua
