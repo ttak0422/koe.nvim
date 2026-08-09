@@ -1,7 +1,7 @@
 local M = {}
 
 M.config = {
-  cmd = nil, -- helper path; nil resolves to bin/koe-helper in this repo
+  cmd = nil, -- helper path override; nil resolves to the bundled binary
   locale = "ja-JP",
   hl = "Comment", -- highlight group for listening status and preview text
   listening_text = "● Listening…",
@@ -92,6 +92,10 @@ function M.start()
   end
   state.pending, state.inserted, state.stopping = "", false, false
   local cmd = M.helper_cmd()
+  if vim.fn.executable(cmd) ~= 1 then
+    vim.notify("koe: bundled helper is unavailable: " .. cmd, vim.log.levels.ERROR)
+    return
+  end
   local job = vim.fn.jobstart({ cmd, "--locale", M.config.locale }, {
     on_stdout = on_stdout,
     on_exit = vim.schedule_wrap(function(_, code)

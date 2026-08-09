@@ -21,7 +21,7 @@ function M.check()
   if vim.fn.executable(cmd) == 1 then
     health.ok("helper: " .. cmd)
   else
-    health.error("helper が未ビルド: " .. cmd, { "koe.nvim リポジトリで `make build`" })
+    health.error("同梱 helper が利用できません: " .. cmd, { "macOS 26 / Apple silicon 版を再インストールしてください" })
   end
 
   if vim.env.TMUX then

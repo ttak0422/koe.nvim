@@ -18,19 +18,15 @@ current volatile result is shown beside it.
 
 - macOS 26 or later on Apple silicon
 - Neovim 0.10 or later
-- Apple Command Line Tools; Xcode is not required
 - Microphone access for the terminal application that runs Neovim
 
 Recognition runs entirely on device and has no server-side duration limit.
 
 ## Installation
 
-Add the repository with your preferred Neovim plugin manager, then build the
-helper from the plugin directory:
-
-```sh
-make build
-```
+Install the repository with your preferred Neovim plugin manager. The
+macOS 26 / Apple silicon helper is bundled, so no separate build step is
+required.
 
 ## Setup
 
