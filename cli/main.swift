@@ -2,6 +2,7 @@
 // contract: {"e":"ready"} / {"e":"volatile","text":...} / {"e":"final","text":...} / {"e":"error","message":...}
 // Stop by closing stdin (Neovim calls chanclose) -> finalize, then exit 0.
 import AVFoundation
+import Darwin
 import Foundation
 import Speech
 
@@ -116,16 +117,37 @@ do {
 
 emit(Event(e: "ready"))
 
-// ponytail: stdin EOF is the only graceful stop; SIGTERM keeps its default (kill), losing only the trailing final.
-await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
-    DispatchQueue.global().async {
-        while readLine(strippingNewline: false) != nil {}
-        cont.resume()
+let (stopEvents, stopContinuation) = AsyncStream<Void>.makeStream()
+var signalSources: [DispatchSourceSignal] = []
+
+for signalNumber in [SIGINT, SIGTERM, SIGHUP] {
+    signal(signalNumber, SIG_IGN)
+    let source = DispatchSource.makeSignalSource(signal: signalNumber, queue: .global())
+    source.setEventHandler {
+        stopContinuation.yield(())
+        stopContinuation.finish()
     }
+    source.resume()
+    signalSources.append(source)
 }
 
+DispatchQueue.global().async {
+    while readLine(strippingNewline: false) != nil {}
+    stopContinuation.yield(())
+    stopContinuation.finish()
+}
+
+for await _ in stopEvents { break }
+signalSources.forEach { $0.cancel() }
+
 engine.stop()
+input.removeTap(onBus: 0)
 inputBuilder.finish()
-try? await analyzer.finalizeAndFinishThroughEndOfInput()
+do {
+    try await analyzer.finalizeAndFinishThroughEndOfInput()
+} catch {
+    emit(Event(e: "error", message: "analyzer finalize failed: \(error)"))
+    await analyzer.cancelAndFinishNow()
+}
 _ = await resultsTask.value
 exit(0)

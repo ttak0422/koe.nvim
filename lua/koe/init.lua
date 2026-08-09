@@ -3,11 +3,13 @@ local M = {}
 M.config = {
   cmd = nil, -- helper path; nil resolves to bin/koe-helper in this repo
   locale = "ja-JP",
-  hl = "Comment", -- highlight group for ghost text
+  hl = "Comment", -- highlight group for listening status and preview text
+  listening_text = "● Listening…",
+  shutdown_timeout_ms = 2000,
 }
 
 local ns = vim.api.nvim_create_namespace("koe")
-local state = { job = nil, extmark = nil, buf = nil, pending = "", inserted = false }
+local state = { job = nil, extmark = nil, buf = nil, pending = "", inserted = false, stopping = false }
 
 function M.helper_cmd()
   if M.config.cmd then
@@ -25,16 +27,17 @@ local function clear_ghost()
   state.extmark = nil
 end
 
-local function show_ghost(text)
+local function show_status(text)
   clear_ghost()
-  if text == "" then
-    return
-  end
   local buf = vim.api.nvim_get_current_buf()
   local row, col = unpack(vim.api.nvim_win_get_cursor(0))
+  local status = state.stopping and "● Stopping…" or M.config.listening_text
+  if text ~= "" then
+    status = status .. " " .. text
+  end
   state.buf = buf
   state.extmark = vim.api.nvim_buf_set_extmark(buf, ns, row - 1, col, {
-    virt_text = { { text, M.config.hl } },
+    virt_text = { { status, M.config.hl } },
     virt_text_pos = "inline",
   })
 end
@@ -42,13 +45,15 @@ end
 local function insert_text(text)
   clear_ghost()
   if text == "" then
+    show_status("")
     return
   end
   if state.inserted then
     pcall(vim.cmd.undojoin) -- keep one dictation session as a single undo unit
   end
-  vim.api.nvim_paste(text, false, -1)
+  vim.api.nvim_paste(text .. "\n", false, -1)
   state.inserted = true
+  show_status("")
 end
 
 local function handle(line)
@@ -57,10 +62,11 @@ local function handle(line)
     return
   end
   if ev.e == "volatile" then
-    show_ghost(ev.text or "")
+    show_status(ev.text or "")
   elseif ev.e == "final" then
     insert_text(ev.text or "")
   elseif ev.e == "ready" then
+    show_status("")
     vim.notify("koe: listening (" .. M.config.locale .. ")")
   elseif ev.e == "error" then
     vim.notify("koe: " .. (ev.message or "error"), vim.log.levels.ERROR)
@@ -84,12 +90,13 @@ function M.start()
   if state.job then
     return
   end
-  state.pending, state.inserted = "", false
+  state.pending, state.inserted, state.stopping = "", false, false
   local cmd = M.helper_cmd()
   local job = vim.fn.jobstart({ cmd, "--locale", M.config.locale }, {
     on_stdout = on_stdout,
     on_exit = vim.schedule_wrap(function(_, code)
       state.job = nil
+      state.stopping = false
       clear_ghost()
       if code ~= 0 then
         vim.notify("koe: helper exited with " .. code, vim.log.levels.WARN)
@@ -103,14 +110,37 @@ function M.start()
     return
   end
   state.job = job
+  show_status("")
 end
 
 function M.stop()
   if not state.job then
     return
   end
+  state.stopping = true
+  show_status("")
   -- closing stdin makes the helper finalize and exit 0 (graceful stop)
   pcall(vim.fn.chanclose, state.job, "stdin")
+end
+
+local function shutdown()
+  if not state.job then
+    return
+  end
+
+  local job = state.job
+  state.stopping = true
+  pcall(vim.fn.chanclose, job, "stdin")
+
+  local result = vim.fn.jobwait({ job }, M.config.shutdown_timeout_ms)[1]
+  if result == -1 then
+    pcall(vim.fn.jobstop, job)
+    vim.fn.jobwait({ job }, 200)
+  end
+
+  state.job = nil
+  state.stopping = false
+  clear_ghost()
 end
 
 function M.toggle()
@@ -121,11 +151,17 @@ function M.toggle()
   end
 end
 
+function M.is_running()
+  return state.job ~= nil
+end
+
 function M.setup(opts)
   M.config = vim.tbl_extend("force", M.config, opts or {})
-  vim.api.nvim_create_autocmd("InsertLeave", {
-    group = vim.api.nvim_create_augroup("koe", {}),
-    callback = clear_ghost,
+  local group = vim.api.nvim_create_augroup("koe", { clear = true })
+  vim.api.nvim_create_autocmd("VimLeavePre", {
+    group = group,
+    callback = shutdown,
+    desc = "Gracefully stop koe before Neovim exits",
   })
 end
 
