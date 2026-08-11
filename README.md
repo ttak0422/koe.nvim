@@ -14,6 +14,10 @@ Each final recognition result is inserted on its own line. While the helper is
 listening, an inline `● Listening…` extmark remains visible at the cursor; the
 current volatile result is shown beside it.
 
+Because results are written at the cursor, dictation only runs in insert or
+terminal mode. Starting it from normal mode enters insert mode first, and
+leaving insert or terminal mode stops it.
+
 ## Requirements
 
 - macOS 26 or later on Apple silicon
@@ -43,13 +47,15 @@ koe.setup({
   -- hl = "Comment",
 })
 
-vim.keymap.set({ "n", "i" }, "<M-t>", koe.toggle, {
+vim.keymap.set({ "i", "t" }, "<M-t>", koe.toggle, {
   desc = "Toggle koe dictation",
 })
 ```
 
 Dictation never starts automatically. Invoke the mapping once to start and
-again to stop. Run `:checkhealth koe` to verify the local environment.
+again to stop, or leave insert mode. The utterance in progress is still
+finalized and inserted after the stop. Run `:checkhealth koe` to verify the
+local environment.
 
 ## Helper protocol
 

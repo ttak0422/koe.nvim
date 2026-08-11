@@ -20,6 +20,12 @@ function M.helper_cmd()
   return root .. "/bin/koe-helper"
 end
 
+local function in_dictation_mode()
+  -- only the first char matters: "ic"/"ix" (completion popup) are still insert mode
+  local m = vim.api.nvim_get_mode().mode:sub(1, 1)
+  return m == "i" or m == "t"
+end
+
 local function clear_ghost()
   if state.extmark and state.buf and vim.api.nvim_buf_is_valid(state.buf) then
     vim.api.nvim_buf_del_extmark(state.buf, ns, state.extmark)
@@ -89,6 +95,9 @@ end
 function M.start()
   if state.job then
     return
+  end
+  if not in_dictation_mode() then
+    vim.cmd.startinsert() -- dictation writes at the cursor, so it only makes sense while inserting
   end
   state.pending, state.inserted, state.stopping = "", false, false
   local cmd = M.helper_cmd()
@@ -166,6 +175,11 @@ function M.setup(opts)
     group = group,
     callback = shutdown,
     desc = "Gracefully stop koe before Neovim exits",
+  })
+  vim.api.nvim_create_autocmd({ "InsertLeave", "TermLeave" }, {
+    group = group,
+    callback = M.stop,
+    desc = "Stop koe when leaving insert or terminal mode",
   })
 end
 
