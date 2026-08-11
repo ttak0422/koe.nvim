@@ -47,7 +47,7 @@ koe.setup({
   -- hl = "Comment",
 })
 
-vim.keymap.set({ "n", "i", "t" }, "<M-t>", koe.toggle, {
+vim.keymap.set({ "i", "t" }, "<M-t>", koe.toggle, {
   desc = "Toggle koe dictation",
 })
 ```
