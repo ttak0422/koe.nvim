@@ -40,7 +40,7 @@ guard supported.contains(where: { $0.identifier(.bcp47) == locale.identifier(.bc
 }
 
 guard await AVCaptureDevice.requestAccess(for: .audio) else {
-    fail("Microphone access denied. The app running Neovim must have microphone permission and the com.apple.security.device.audio-input entitlement.")
+    fail("Microphone access denied. Allow microphone access for the app running Neovim in macOS System Settings. For Neovide signing requirements, see README: Neovide on macOS.")
 }
 
 let transcriber = SpeechTranscriber(

@@ -28,13 +28,6 @@ function M.check()
     health.warn("tmux may prevent the macOS permission prompt from appearing (unverified)")
   end
 
-  if vim.g.neovide then
-    health.warn(
-      "Neovide must be signed with the com.apple.security.device.audio-input entitlement for microphone access",
-      { "https://github.com/neovide/neovide/issues/3531" }
-    )
-  end
-
   local term = vim.env.TERM_PROGRAM or "unknown"
   health.info("terminal: " .. term)
   health.info("microphone permission belongs to the app running Neovim")

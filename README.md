@@ -22,9 +22,19 @@ leaving insert or terminal mode stops it.
 
 - macOS 26 or later on Apple silicon
 - Neovim 0.10 or later
-- Microphone access for the terminal application that runs Neovim
+- Microphone access for the application that runs Neovim (terminal or GUI)
 
 Recognition runs entirely on device and has no server-side duration limit.
+
+### Neovide on macOS
+
+Use an official [nightly](https://github.com/neovide/neovide/releases/tag/nightly)
+that includes [neovide#3585](https://github.com/neovide/neovide/pull/3585)
+(merged 2026-10-09), or a later stable release containing that fix.
+As of 2026-10-30, the latest stable release, **0.16.2**, lacks the
+`com.apple.security.device.audio-input` signing entitlement required for this
+microphone input path. Microphone permission in macOS System Settings →
+Privacy & Security → Microphone is still required.
 
 ## Installation
 
