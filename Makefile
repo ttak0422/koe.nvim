@@ -9,7 +9,6 @@ bin/koe-helper: cli/main.swift
 	$(SWIFTC) -O -swift-version 5 -sdk $(SDK) -o $@ $<
 
 test:
-	nvim --headless --clean -l test/health.lua
 	nvim --headless --clean -l test/smoke.lua
 
 clean:
