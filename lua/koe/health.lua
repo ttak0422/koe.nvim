@@ -29,10 +29,21 @@ function M.check()
   end
 
   if vim.g.neovide then
-    health.warn(
-      "Neovide must be signed with the com.apple.security.device.audio-input entitlement for microphone access",
-      { "https://github.com/neovide/neovide/issues/3531" }
-    )
+    local version = tostring(vim.g.neovide_version or "unknown")
+    -- Nightly/custom versions cannot establish which signing pipeline was used.
+    if version:match("^%d+%.%d+%.%d+$") and vim.version.le(version, { 0, 16, 2 }) then
+      health.warn(
+        "Neovide " .. version .. " official macOS builds lack the com.apple.security.device.audio-input entitlement",
+        {
+          "Use a build containing the signing fix: https://github.com/neovide/neovide/pull/3585",
+          "See README: Neovide on macOS; microphone permission is still required",
+        }
+      )
+    else
+      health.info(
+        "Neovide " .. version .. ": verify that this build includes the audio-input signing fix (#3585); see README: Neovide on macOS"
+      )
+    end
   end
 
   local term = vim.env.TERM_PROGRAM or "unknown"

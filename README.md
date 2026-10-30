@@ -22,9 +22,39 @@ leaving insert or terminal mode stops it.
 
 - macOS 26 or later on Apple silicon
 - Neovim 0.10 or later
-- Microphone access for the terminal application that runs Neovim
+- Microphone access for the application that runs Neovim (terminal or GUI)
 
 Recognition runs entirely on device and has no server-side duration limit.
+
+### Neovide on macOS
+
+`koe.nvim` records through its Swift helper and inserts results with
+`nvim_paste`; it does not use macOS system Dictation. The system Dictation
+issue [neovide#3541](https://github.com/neovide/neovide/issues/3541) is separate.
+
+Official macOS releases through **0.16.2** lack the
+`com.apple.security.device.audio-input` signing entitlement, which prevents
+microphone access in those hardened runtime builds. Neovide fixed its release
+and nightly signing pipelines in
+[neovide#3585](https://github.com/neovide/neovide/pull/3585), merged on
+2026-10-09. As of 2026-10-30, the latest stable release is still
+[0.16.2](https://github.com/neovide/neovide/releases/tag/0.16.2); the current
+[nightly](https://github.com/neovide/neovide/releases/tag/nightly) source
+includes the fix. A nightly or custom version string alone does not prove
+that a particular app was signed with the entitlement.
+
+For a hardened runtime build, verify the installed binary's entitlements
+(adjust the path to match your installation):
+
+```sh
+codesign -d --entitlements - /Applications/Neovide.app/Contents/MacOS/neovide
+```
+
+Look for `com.apple.security.device.audio-input` set to `true`. A correctly
+signed build still needs microphone permission in macOS System Settings →
+Privacy & Security → Microphone. `:checkhealth koe` warns about affected stable
+versions and provides signing guidance for other builds; it does not test or
+request microphone access.
 
 ## Installation
 
